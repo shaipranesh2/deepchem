@@ -5,11 +5,13 @@ One of the most important parts of machine learning applications is finding a su
 The MoleculeNet suite has curated a whole range of datasets and loaded them into DeepChem
 :code:`dc.data.Dataset` objects for convenience.
 
+.. include:: moleculenet_cheatsheet.rst
+
 Contributing a new dataset to MoleculeNet
 -----------------------------------------
 
-If you are proposing a new dataset to be included in the 
-MoleculeNet benchmarking suite, please follow the instructions below. 
+If you are proposing a new dataset to be included in the
+MoleculeNet benchmarking suite, please follow the instructions below.
 Please review the `datasets already available in MolNet`_ before contributing.
 
 0. Read the `Contribution guidelines`_.
@@ -28,6 +30,27 @@ Please review the `datasets already available in MolNet`_ before contributing.
 
 7. Submit a [WIP] PR (Work in progress pull request) following the PR `template`_.
 
+Example Usage
+-------------
+Below is an example of how to load a MoleculeNet dataset and featurizer. This approach will work for any dataset in MoleculeNet by changing the load function and featurizer. For more details on the featurizers, see the `Featurizers` section.
+::
+
+
+    import deepchem as dc
+    from deepchem.feat.molecule_featurizers import MolGraphConvFeaturizer
+
+    featurizer = MolGraphConvFeaturizer(use_edges=True)
+    dataset_dc = dc.molnet.load_qm9(featurizer=featurizer)
+    tasks, dataset, transformers = dataset_dc
+    train, valid, test = dataset
+
+    x,y,w,ids = train.X, train.y, train.w, train.ids
+
+
+Note that the "w" matrix represents the weight of each sample. Some assays may have missing values, in which case the weight is 0. Otherwise, the weight is 1.
+
+
+Additionally, the environment variable ``DEEPCHEM_DATA_DIR`` can be set like ``os.environ['DEEPCHEM_DATA_DIR'] = path/to/store/featurized/dataset``. When the ``DEEPCHEM_DATA_DIR`` environment variable is set, molnet loader stores the featurized dataset in the specified directory and when the dataset has to be reloaded the next time, it will be fetched from the data directory directly rather than featurizing the raw dataset from scratch.
 
 BACE Dataset
 ------------
@@ -127,12 +150,12 @@ Materials Datasets
 Materials datasets include inorganic crystal structures, chemical
 compositions, and target properties like formation energies and band
 gaps. Machine learning problems in materials science commonly include
-predicting the value of a continuous (regression) or categorical 
+predicting the value of a continuous (regression) or categorical
 (classification) property of a material based on its chemical composition
 or crystal structure. "Inverse design" is also of great interest, in which
-ML methods generate crystal structures that have a desired property. 
-Other areas where ML is applicable in materials include: discovering new 
-or modified phenomenological models that describe material behavior 
+ML methods generate crystal structures that have a desired property.
+Other areas where ML is applicable in materials include: discovering new
+or modified phenomenological models that describe material behavior
 
 .. autofunction:: deepchem.molnet.load_bandgap
 .. autofunction:: deepchem.molnet.load_perovskite
@@ -219,7 +242,7 @@ UV Datasets
 .. autofunction:: deepchem.molnet.load_uv
 
 
-.. _`datasets already available in MolNet`: http://moleculenet.ai/datasets-1
+.. _`datasets already available in MolNet`: https://moleculenet.org/datasets-1
 .. _`Contribution guidelines`: https://github.com/deepchem/deepchem/blob/master/CONTRIBUTING.md
 .. _`issue`: https://github.com/deepchem/deepchem/issues
 .. _`_QM9Loader`: https://github.com/deepchem/deepchem/blob/master/deepchem/molnet/load_function/qm9_datasets.py

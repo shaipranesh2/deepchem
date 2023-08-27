@@ -96,6 +96,36 @@ Losses
 .. autoclass:: deepchem.models.losses.ShannonEntropy
   :members:
 
+.. autoclass:: deepchem.models.losses.GlobalMutualInformationLoss
+  :members:
+
+.. autoclass:: deepchem.models.losses.LocalMutualInformationLoss
+  :members:
+
+.. autoclass:: deepchem.models.losses.GroverPretrainLoss
+  :members:
+
+.. autoclass:: deepchem.models.losses.EdgePredictionLoss
+  :members:
+
+.. autoclass:: deepchem.models.losses.GraphNodeMaskingLoss
+  :members:
+
+.. autoclass:: deepchem.models.losses.GraphEdgeMaskingLoss
+  :members:
+
+.. autoclass:: deepchem.models.losses.DeepGraphInfomaxLoss
+  :members:
+
+.. autoclass:: deepchem.models.losses.GraphContextPredLoss
+  :members:
+
+.. autoclass:: deepchem.models.losses.DensityProfileLoss
+  :members:
+
+.. autoclass:: deepchem.models.losses.NTXentMultiplePositives
+  :members:
+
 Optimizers
 ----------
 
@@ -237,7 +267,7 @@ MPNNModel
   :members:
 
 BasicMolGANModel
----------
+----------------
 
 .. autoclass:: deepchem.models.BasicMolGANModel
   :members:
@@ -321,6 +351,14 @@ You can wrap an arbitrary :code:`torch.nn.Module` in a :code:`TorchModel` object
 .. autoclass:: deepchem.models.TorchModel
   :members:
 
+ModularTorchModel
+-----------------
+
+You can modify networks for different tasks by using a :code:`ModularTorchModel`.
+
+.. autoclass:: deepchem.models.torch_models.modular.ModularTorchModel
+  :members:
+
 CNN
 ---
 
@@ -371,7 +409,7 @@ AttentiveFPModel
   :members:
 
 PagtnModel
-----------------
+----------
 
 .. autoclass:: deepchem.models.PagtnModel
   :members:
@@ -384,6 +422,32 @@ Note that this is an alternative implementation for MPNN and currently you can o
 
 .. autoclass:: deepchem.models.torch_models.MPNNModel
   :members:
+
+InfoGraphModel
+--------------
+
+.. autoclass:: deepchem.models.torch_models.InfoGraphModel
+  :members:
+
+InfoGraphStarModel
+------------------
+
+.. autoclass:: deepchem.models.torch_models.InfoGraphStarModel
+  :members:
+
+
+GNNModular
+----------
+
+.. autoclass:: deepchem.models.torch_models.gnn.GNNModular
+  :members:
+
+InfoMax3DModular
+----------------
+
+.. autoclass:: deepchem.models.torch_models.gnn3d.InfoMax3DModular
+  :members:
+
 
 LCNNModel
 ---------
@@ -403,21 +467,44 @@ MATModel
 .. autoclass:: deepchem.models.torch_models.MATModel
   :members:
 
+NormalizingFlowModel
+--------------------
+
+.. autoclass:: deepchem.models.torch_models.NormalizingFlow
+
 DMPNNModel
---------
+----------
 
 .. autoclass:: deepchem.models.torch_models.DMPNNModel
   :members:
 
+GroverModel
+-----------
+
+.. autoclass:: deepchem.models.torch_models.GroverModel
+  :members:
+
+DTNNModel
+---------
+
+.. autoclass:: deepchem.models.torch_models.DTNNModel
+  :members:
+
+Density Functional Theory Model - XCModel
+-----------------------------------------
+
+.. autoclass:: deepchem.models.dft.dftxc.XCModel
+  :members:
+
 PyTorch Lightning Models
-==============
+========================
 
 DeepChem supports the use of `PyTorch-Lightning`_ to build PyTorch models.
 
 .. _`PyTorch-Lightning`: https://www.pytorchlightning.ai/
 
 DCLightningModule
-----------
+-----------------
 
 You can wrap an arbitrary :code:`TorchModel` in a :code:`DCLightningModule` object.
 
@@ -425,20 +512,34 @@ You can wrap an arbitrary :code:`TorchModel` in a :code:`DCLightningModule` obje
   :members:
 
 Jax Models
-==============
+==========
 
 DeepChem supports the use of `Jax`_ to build deep learning models.
 
 .. _`Jax`: https://github.com/google/jax
 
 JaxModel
-----------
+--------
 
 .. autoclass:: deepchem.models.JaxModel
   :members:
 
 PinnModel
-----------
+---------
 
 .. autoclass:: deepchem.models.PINNModel
+  :members:
+
+Hugging Face Models
+===================
+
+HuggingFace models from the `transformers <https://huggingface.co/models>`_ library can wrapped using the wrapper :code:`HuggingFaceModel`
+
+.. autoclass:: deepchem.models.torch_models.hf_models.HuggingFaceModel
+  :members:
+
+Chemberta
+---------
+
+.. autoclass:: deepchem.models.torch_models.chemberta.Chemberta
   :members:

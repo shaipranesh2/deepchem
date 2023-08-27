@@ -2,6 +2,12 @@
 Miscellaneous utility functions.
 """
 # flake8: noqa
+import logging
+
+logger = logging.getLogger(__name__)
+
+from deepchem.utils.batch_utils import batch_coulomb_matrix_features
+
 from deepchem.utils.conformers import ConformerGenerator
 from deepchem.utils.evaluate import relative_difference
 from deepchem.utils.evaluate import Evaluator
@@ -59,6 +65,18 @@ from deepchem.utils.geometry_utils import subtract_centroid
 from deepchem.utils.geometry_utils import compute_protein_range
 from deepchem.utils.geometry_utils import compute_pairwise_distances
 
+from deepchem.utils.graph_utils import fourier_encode_dist
+from deepchem.utils.graph_utils import aggregate_mean
+from deepchem.utils.graph_utils import aggregate_max
+from deepchem.utils.graph_utils import aggregate_min
+from deepchem.utils.graph_utils import aggregate_std
+from deepchem.utils.graph_utils import aggregate_var
+from deepchem.utils.graph_utils import aggregate_moment
+from deepchem.utils.graph_utils import aggregate_sum
+from deepchem.utils.graph_utils import scale_identity
+from deepchem.utils.graph_utils import scale_amplification
+from deepchem.utils.graph_utils import scale_attenuation
+
 from deepchem.utils.hash_utils import hash_ecfp
 from deepchem.utils.hash_utils import hash_ecfp_pair
 from deepchem.utils.hash_utils import vectorize
@@ -97,3 +115,10 @@ from deepchem.utils.voxel_utils import voxelize
 
 from deepchem.utils.sequence_utils import hhblits
 from deepchem.utils.sequence_utils import hhsearch
+
+try:
+    from deepchem.utils.pytorch_utils import unsorted_segment_sum
+    from deepchem.utils.pytorch_utils import segment_sum
+except ModuleNotFoundError as e:
+    logger.warning(
+        f'Skipped loading some Pytorch utilities, missing a dependency. {e}')

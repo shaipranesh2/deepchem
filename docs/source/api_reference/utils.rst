@@ -139,6 +139,31 @@ Geometry Utilities
 
 .. autofunction:: deepchem.utils.geometry_utils.is_angle_within_cutoff
 
+Graph Utilities
+---------------
+
+.. autofunction:: deepchem.utils.graph_utils.fourier_encode_dist
+
+.. autofunction:: deepchem.utils.graph_utils.aggregate_mean
+
+.. autofunction:: deepchem.utils.graph_utils.aggregate_max
+
+.. autofunction:: deepchem.utils.graph_utils.aggregate_min
+
+.. autofunction:: deepchem.utils.graph_utils.aggregate_std
+
+.. autofunction:: deepchem.utils.graph_utils.aggregate_var
+
+.. autofunction:: deepchem.utils.graph_utils.aggregate_moment
+
+.. autofunction:: deepchem.utils.graph_utils.aggregate_sum
+
+.. autofunction:: deepchem.utils.graph_utils.scale_identity
+
+.. autofunction:: deepchem.utils.graph_utils.scale_amplification
+
+.. autofunction:: deepchem.utils.graph_utils.scale_attenuation
+
 Hash Function Utilities
 -----------------------
 
@@ -193,6 +218,10 @@ Graph Convolution Utilities
 
 .. autofunction:: deepchem.utils.molecule_feature_utils.get_bond_graph_distance_one_hot
 
+Grover Utilities
+----------------
+
+.. autofunction:: deepchem.utils.grover.extract_grover_attributes
 
 Debug Utilities
 ---------------
@@ -247,3 +276,28 @@ like Variational Monte Carlo, etc.
 
 .. autoclass:: deepchem.utils.electron_sampler.ElectronSampler
   :members:
+
+Density Functional Theory Utilities
+-----------------------------------
+
+The utilites here are used to create an object that contains information about a system's self-consistent iteration steps and other processes.
+
+.. autoclass:: deepchem.utils.dftutils.KSCalc
+  :members:
+
+.. autofunction:: deepchem.utils.dftutils.hashstr
+
+Pytorch Utilities
+-----------------
+
+.. autofunction:: deepchem.utils.pytorch_utils.unsorted_segment_sum
+
+.. autofunction:: deepchem.utils.pytorch_utils.segment_sum
+
+Batch Utilities
+---------------
+
+The utilites here are used for computing features on batch of data.
+Can be used inside of default_generator function.
+
+.. autofunction:: deepchem.utils.batch_utils.batch_coulomb_matrix_features
