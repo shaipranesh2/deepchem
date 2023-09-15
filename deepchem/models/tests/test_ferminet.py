@@ -13,7 +13,7 @@ except ModuleNotFoundError:
     pass
 
 
-@pytest.mark.torch
+@pytest.mark.dqc
 def test_FerminetModel():
     # Test for the init function of FerminetModel class
     FH_molecule = [['F', [0, 0, 0]], ['H', [0, 0.5, 0.5]]]
