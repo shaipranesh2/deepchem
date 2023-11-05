@@ -598,6 +598,8 @@ class FerminetModel(TorchModel):
                 print("Iteration " + str(iteration) + " energy:-" +
                       str(energy_mean) + " variance: " + str(variance) +
                       " acceptance: " + str(accept))
+                energy_mean = None
+                variance = None
                 # using the sampled electrons from the electron sampler for bacward pass and modifying gradients
                 sample_history = torch.from_numpy(
                     self.molecule.sampled_electrons).view(
