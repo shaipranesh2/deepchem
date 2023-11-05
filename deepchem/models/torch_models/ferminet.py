@@ -592,7 +592,7 @@ class FerminetModel(TorchModel):
                                              min=median - 5 * variance)
                 energy_mean = torch.mean(clamped_energy)
                 print("Iteration " + str(iteration) + " energy:-" +
-                      str(energy_mean[0]) + " variance: " + str(variance[0]) +
+                      str(energy_mean) + " variance: " + str(variance) +
                       " acceptance: " + str(accept))
                 # using the sampled electrons from the electron sampler for bacward pass and modifying gradients
                 sample_history = torch.from_numpy(
