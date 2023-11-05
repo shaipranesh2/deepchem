@@ -35,7 +35,7 @@ def test_forward():
     FH_molecule = [['F', [0.424, 0.424, 0.23]], ['H', [0.4, 0.5, 0.5]]]
     # Testing ionic initialization
     mol = FerminetModel(FH_molecule, spin=1, ion_charge=-1)
-    result = mol.model.forward(mol.molecule.x)
+    result = mol.model.forward(torch.from_numpy(mol.molecule.x))
     assert result.size() == torch.Size([8])
 
 
@@ -57,20 +57,60 @@ def test_FerminetMode_pretrain():
     H2_molecule = [['H', [0, 0, 0]], ['H', [0, 0, 0.748]]]
     # Testing ionic initialization
     mol = FerminetModel(H2_molecule, spin=0, ion_charge=0)
-    mol.train(nb_epoch=3)
+    mol.train(nb_epoch=10)
     assert mol.loss_value <= torch.tensor(1.0)
 
 
 @pytest.mark.dqc
 def test_FerminetMode_energy():
     # Test for the init function of FerminetModel class
-    H2_molecule = [['H', [0, 0, 0]], ['H', [0, 0, 0.748]]]
+    H2_molecule = [['H', [0, 0, 0]], ['H', [0, 0, 1.4135151]]]
     # Testing ionic initialization
     mol = FerminetModel(H2_molecule, spin=0, ion_charge=0)
-    mol.train(nb_epoch=50)
-    mol.model.forward(mol.molecule.x)
+    mol.train(nb_epoch=100)
+    mol.prepare_train()
+    _ = mol.model.forward(torch.from_numpy(mol.molecule.x))
     energy = mol.model.calculate_electron_electron(
     ) - mol.model.calculate_electron_nuclear(
     ) + mol.model.nuclear_nuclear_potential + mol.model.calculate_kinetic_energy(
     )
-    assert energy <= torch.tensor(1.0)
+    mean_energy = torch.mean(energy)
+    median, _ = torch.median(energy, axis=0)
+    variance = torch.mean(torch.abs(energy - median))
+    print(mol.loss_value)
+    print(energy)
+    print(mean_energy)
+    print(variance)
+    raise IndexError
+    assert mean_energy <= torch.tensor(1.0)
+
+
+@pytest.mark.dqc
+def test_FerminetMode_train():
+    # Test for the train function of FerminetModel class
+    H2_molecule = [['H', [0, 0, 0]], ['H', [0, 0, 1.1]]]
+    # Testing ionic initialization
+    mol = FerminetModel(H2_molecule, spin=0, ion_charge=0, batch_no=4)
+    # training after pretraining
+    mol.train(nb_epoch=100)
+    print(mol.loss_value)
+    mol.prepare_train()
+    mol.model.forward(torch.from_numpy(mol.molecule.x))
+    energy = mol.model.calculate_electron_electron(
+    ) - mol.model.calculate_electron_nuclear(
+    ) + mol.model.nuclear_nuclear_potential + mol.model.calculate_kinetic_energy(
+    )
+    mean_energy = torch.mean(energy)
+    print(energy)
+    print(mean_energy)
+    mol.train(nb_epoch=50)
+    mol.model.forward(mol.model.input)
+    energy = mol.model.calculate_electron_electron(
+    ) - mol.model.calculate_electron_nuclear(
+    ) + mol.model.nuclear_nuclear_potential + mol.model.calculate_kinetic_energy(
+    )
+    mean_energy = torch.mean(energy)
+    print(energy)
+    print(mean_energy)
+    raise IndexError
+    assert mean_energy <= torch.tensor(1.0)

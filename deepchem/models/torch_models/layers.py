@@ -5461,33 +5461,35 @@ class FerminetElectronFeature(torch.nn.Module):
         self.v.append(
             nn.Linear(8 + 3 * 4 * self.no_of_atoms, self.n_one[0], bias=True))
         #filling the weights with 1e-3 for faster convergence
-        self.v[0].weight.data.fill_(1e-3)
-        self.v[0].bias.data.fill_(1e-3)
-        self.v[0].weight.data = self.v[0].weight.data
-        self.v[0].bias.data = self.v[0].bias.data
+        self.v[0].weight.data = torch.randn(size=(
+            self.v[0].weight.shape[0], self.v[0].weight.shape[1])) / math.sqrt(
+                self.v[0].weight.shape[1])
+        self.v[0].bias.data = torch.randn(size=(self.v[0].weight.shape[0],))
 
         self.w.append(nn.Linear(4, self.n_two[0], bias=True))
-        self.w[0].weight.data.fill_(1e-3)
-        self.w[0].bias.data.fill_(1e-3)
-        self.w[0].weight.data = self.w[0].weight.data
-        self.w[0].bias.data = self.w[0].bias.data
+        self.w[0].weight.data = torch.randn(size=(
+            self.w[0].weight.shape[0], self.w[0].weight.shape[1])) / math.sqrt(
+                self.w[0].weight.shape[1])
+        self.w[0].bias.data = torch.randn(size=(self.w[0].weight.shape[0],))
 
         for i in range(1, self.layer_size):
             self.v.append(
                 nn.Linear(3 * self.n_one[i - 1] + 2 * self.n_two[i - 1],
                           n_one[i],
                           bias=True))
-            self.v[i].weight.data.fill_(1e-3)
-            self.v[i].bias.data.fill_(1e-3)
-            self.v[i].weight.data = self.v[i].weight.data
-            self.v[i].bias.data = self.v[i].bias.data
+            self.v[i].weight.data = torch.randn(
+                size=(self.v[i].weight.shape[0],
+                      self.v[i].weight.shape[1])) / math.sqrt(
+                          self.v[i].weight.shape[1])
+            self.v[i].bias.data = torch.randn(size=(self.v[i].weight.shape[0],))
 
             self.w.append(nn.Linear(self.n_two[i - 1], self.n_two[i],
                                     bias=True))
-            self.w[i].weight.data.fill_(1e-3)
-            self.w[i].weight.data = self.w[i].weight.data
-            self.w[i].bias.data.fill_(1e-3)
-            self.w[i].bias.data = self.w[i].bias.data
+            self.w[i].weight.data = torch.randn(
+                size=(self.w[i].weight.shape[0],
+                      self.w[i].weight.shape[1])) / math.sqrt(
+                          self.w[i].weight.shape[1])
+            self.w[i].bias.data = torch.randn(size=(self.w[i].weight.shape[0],))
 
         self.projection_module = nn.ModuleList()
         self.projection_module.append(
@@ -5497,6 +5499,14 @@ class FerminetElectronFeature(torch.nn.Module):
                 bias=False,
             ))
         self.projection_module.append(nn.Linear(4, n_two[0], bias=False))
+        self.projection_module[0].weight.data = torch.randn(
+            size=(self.projection_module[0].weight.shape[0],
+                  self.projection_module[0].weight.shape[1])) / math.sqrt(
+                      self.projection_module[0].weight.shape[1])
+        self.projection_module[1].weight.data = torch.randn(
+            size=(self.projection_module[1].weight.shape[0],
+                  self.projection_module[1].weight.shape[1])) / math.sqrt(
+                      self.projection_module[1].weight.shape[1])
 
     def forward(self, one_electron: torch.Tensor, two_electron: torch.Tensor):
         """
@@ -5514,7 +5524,7 @@ class FerminetElectronFeature(torch.nn.Module):
         one_electron: torch.Tensor
             The one electron feature after passing through the layer which has the shape (batch_size, number of electrons, n_one shape).
         two_electron: torch.Tensor
-            The two electron feature after passing through the layer which has the shape (batch_size, number of electrons, number of electron , n_two shape).
+            The two electron feature after passing through the layer which has the shape (batch_size, number of electrons, number of electron , n_two shape).   
         """
         for l in range(self.layer_size):
             # Calculating one-electron feature's average
@@ -5624,21 +5634,19 @@ class FerminetEnvelope(torch.nn.Module):
         self.envelope_g = torch.nn.ParameterList()
         self.sigma = torch.nn.ParameterList()
         self.pi = torch.nn.ParameterList()
+        self.wdet = torch.nn.ParameterList()
 
         for i in range(self.determinant):
+            self.wdet.append(torch.nn.init.normal(torch.zeros(1)).squeeze(0))
             for j in range(self.total_electron):
                 self.envelope_w.append(
-                    torch.nn.init.uniform(torch.empty(n_one[-1], 1),
-                                          b=1e-3).squeeze(-1))
+                    (torch.nn.init.normal(torch.zeros(n_one[-1], 1),) /
+                     math.sqrt(n_one[-1])).squeeze(-1))
                 self.envelope_g.append(
-                    torch.nn.init.uniform(torch.empty(1), b=1e-3).squeeze(0))
+                    (torch.nn.init.normal(torch.zeros(1))).squeeze(0))
                 for k in range(self.no_of_atoms):
-                    self.sigma.append(
-                        torch.nn.init.uniform(torch.empty(self.no_of_atoms, 1),
-                                              b=1e-3).squeeze(0))
-                    self.pi.append(
-                        torch.nn.init.uniform(torch.empty(self.no_of_atoms, 1),
-                                              b=1e-3).squeeze(0))
+                    self.pi.append((torch.zeros(1)))
+                    self.sigma.append(torch.eye(3))
 
     def forward(self, one_electron: torch.Tensor,
                 one_electron_vector_permuted: torch.Tensor):
@@ -5669,8 +5677,8 @@ class FerminetEnvelope(torch.nn.Module):
                         (self.envelope_w[one_d_index] * one_electron[:, j, :]) +
                         self.envelope_g[one_d_index],
                         dim=1)) * torch.sum(torch.exp(-torch.abs(
-                            torch.norm(self.sigma[one_d_index] *
-                                       one_electron_vector_permuted[:, j, :, :],
+                            torch.norm(one_electron_vector_permuted[:, j, :, :]
+                                       @ self.sigma[one_d_index].double(),
                                        dim=2))) * self.pi[one_d_index].T,
                                             dim=1)
 
@@ -5683,15 +5691,15 @@ class FerminetEnvelope(torch.nn.Module):
                                   self.envelope_g[one_d_index],
                                   dim=1)
                     ) * torch.sum(torch.exp(-torch.abs(
-                        torch.norm(self.sigma[one_d_index] *
-                                   one_electron_vector_permuted[:, j, :, :],
+                        torch.norm(one_electron_vector_permuted[:, j, :, :]
+                                   @ self.sigma[one_d_index].double(),
                                    dim=2))) * self.pi[one_d_index].T,
                                   dim=1)
 
             d_down = torch.det(psi_down[:, k, :, :].clone())
             d_up = torch.det(psi_up[:, k, :, :].clone())
             det = d_up * d_down
-            psi = psi + det
+            psi = psi + self.wdet[k] * det
         return psi, psi_up, psi_down
 
 

@@ -63,7 +63,7 @@ class ElectronSampler:
                  f: Callable[[np.ndarray], np.ndarray],
                  batch_no: int = 10,
                  x: np.ndarray = np.array([]),
-                 steps: int = 200,
+                 steps: int = 10,
                  steps_per_update: int = 10,
                  seed: Optional[int] = None,
                  symmetric: bool = True,
@@ -165,20 +165,21 @@ class ElectronSampler:
         mean = self.central_value[0]
         specific_sample = no_sample[0][0]
         ndim = np.shape(self.central_value)[1]
-        self.x = np.random.normal(mean, stddev,
-                                  (self.batch_no, specific_sample, 1, ndim))
-
+        self.x = mean + stddev * np.random.normal(size=(1, specific_sample, 1,
+                                                        ndim))
         end = np.shape(self.central_value)[0]
         for i in range(1, end):
             mean = self.central_value[i]
             specific_sample = no_sample[i][0]
             self.x = np.append(
                 self.x,
-                np.random.normal(mean, stddev,
-                                 (self.batch_no, specific_sample, 1, ndim)),
+                mean +
+                stddev * np.random.normal(size=(1, specific_sample, 1, ndim)),
                 axis=1)
+        self.x = np.tile(self.x, (self.batch_no, 1, 1, 1))
 
-    def electron_update(self, lp1, lp2, move_prob, ratio, x2) -> np.ndarray:
+    def electron_update(self, lp1, lp2, move_prob, ratio, x2,
+                        count) -> np.ndarray:
         """
         Performs sampling & parameter updates of electrons and appends the sampled electrons to self.sampled_electrons.
 
@@ -202,7 +203,7 @@ class ElectronSampler:
         """
         cond = move_prob < ratio
         tmp_sampled = np.where(cond[:, None, None, None], x2, self.x)
-        if (self.steps % self.steps_per_update) == 0:
+        if (count % self.steps_per_update) == 0:
             self.x = tmp_sampled
             lp1 = np.where(cond, lp2, lp1)
         if (np.shape(self.sampled_electrons)[0] == 0):
@@ -237,12 +238,13 @@ class ElectronSampler:
             accepted move ratio of the MCMC steps.
         """
         self.sampled_electrons = np.array([])
+        self.num_accept = 0.0
 
         lp1 = self.f(self.x)  # log probability of self.x state
 
         if self.simultaneous:
             if self.symmetric:
-                for i in range(self.steps):
+                for i in range(1, self.steps + 1):
                     x2 = np.random.normal(self.x, stddev, self.x.shape)
                     lp2 = self.f(x2)  # log probability of x2 state
                     move_prob = np.log(
@@ -250,7 +252,8 @@ class ElectronSampler:
                                           high=1.0,
                                           size=np.shape(self.x)[0]))
                     ratio = lp2 - lp1
-                    lp1 = self.electron_update(lp1, lp2, move_prob, ratio, x2)
+                    lp1 = self.electron_update(lp1, lp2, move_prob, ratio, x2,
+                                               i)
 
             elif asymmetric_func is not None:
                 for i in range(self.steps):
@@ -310,4 +313,4 @@ class ElectronSampler:
                     lp1 = self.electron_update(lp1, lp2, move_prob, ratio, x2)
 
         return self.num_accept / (
-            (i + 1) * np.shape(self.x)[0])  # accepted move ratio
+            (i) * np.shape(self.x)[0])  # accepted move ratio
