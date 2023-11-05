@@ -259,7 +259,10 @@ class Ferminet(torch.nn.Module):
                 self.input)[i, i, j, k, i, j, k],
             (self.batch_size, self.total_electron, 3)),
                                 axis=(1, 2))
+        print("test passed")
         kinetic_energy = -1 * 0.5 * (jacobian_square_sum + hessian_sum)
+        jacobian_square_sum = None
+        hessian_sum = None
         return kinetic_energy
 
 
