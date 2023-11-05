@@ -248,17 +248,24 @@ class Ferminet(torch.nn.Module):
         j = torch.arange(self.total_electron).view(1, self.total_electron, 1, 1,
                                                    1, 1, 1)
         k = torch.arange(3).view(1, 1, 3, 1, 1, 1, 1)
-        jacobian_square_sum = torch.sum(torch.sum(torch.sum(torch.pow(
-            torch.func.jacrev(lambda x: torch.log(torch.abs(self.forward(x))))(
-                self.input), 2),
-                                                            axis=-1),
-                                                  axis=-1),
-                                        axis=-1).detach()
-        hessian_sum = torch.sum(torch.reshape(
-            torch.func.hessian(lambda x: torch.log(torch.abs(self.forward(x))))(
-                self.input)[i, i, j, k, i, j, k],
-            (self.batch_size, self.total_electron, 3)),
-                                axis=(1, 2)).detach()
+        funct = lambda z: torch.sum(torch.reshape(
+            torch.func.hessian(lambda x: torch.log(torch.abs(self.forward(x))))
+            (z)[i, i, j, k, i, j, k],
+            (self.batch_size, self.total_electron, 3)).detach(),
+                                    axis=(1, 2))
+        self.input.requires_grad = False
+        print(self.input.requires_grad)
+        print("reached")
+        with torch.set_grad_enabled(False):
+            jacobian_square_sum = torch.sum(torch.sum(torch.sum(torch.pow(
+                torch.func.jacrev(
+                    lambda x: torch.log(torch.abs(self.forward(x))))(
+                        self.input), 2),
+                                                                axis=-1),
+                                                      axis=-1),
+                                            axis=-1)
+            print(jacobian_square_sum)
+            hessian_sum = torch.func.functionalize(funct)(self.input)
         print("test passed")
         kinetic_energy = -1 * 0.5 * (jacobian_square_sum + hessian_sum)
         jacobian_square_sum = None
