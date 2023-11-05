@@ -483,7 +483,10 @@ class FerminetModel(TorchModel):
         A numpy array containing the joint probability of the hartree fock and the sampled electron's position coordinates
         """
         x_torch = torch.from_numpy(x).view(self.batch_no, -1, 3)
-        x_torch.requires_grad = True
+        if self.tasks == 'pretraining':
+            x_torch.requires_grad = True
+        else:
+            x_torch.requires_grad = False
         output = self.model.forward(x_torch)
         np_output = output.detach().cpu().numpy()
 
@@ -555,7 +558,7 @@ class FerminetModel(TorchModel):
                 optimizer.zero_grad()
                 self.loss_value = torch.tensor(0.0)
                 accept = self.molecule.move(stddev=std)
-                if accept > 0.85:
+                if accept > 0.55:
                     std *= 1.1
                 else:
                     std /= 1.1
@@ -580,7 +583,7 @@ class FerminetModel(TorchModel):
                 self.energy_sampled = torch.tensor([])
                 # the move function calculates the energy of sampled electrons and samples new set of electrons (does not calculate loss)
                 accept = self.molecule.move(stddev=std)
-                if accept > 0.65:
+                if accept > 0.55:
                     std *= 1.1
                 else:
                     std /= 1.1
@@ -590,6 +593,7 @@ class FerminetModel(TorchModel):
                 clamped_energy = torch.clamp(self.energy_sampled,
                                              max=median + 5 * variance,
                                              min=median - 5 * variance)
+                self.energy_sampled = None  # releasing memory
                 energy_mean = torch.mean(clamped_energy)
                 print("Iteration " + str(iteration) + " energy:-" +
                       str(energy_mean) + " variance: " + str(variance) +
@@ -598,6 +602,7 @@ class FerminetModel(TorchModel):
                 sample_history = torch.from_numpy(
                     self.molecule.sampled_electrons).view(
                         self.random_walk_steps, self.batch_no, -1, 3)
+                self.molecule.sampled_electrons = None
                 optimizer.zero_grad()
                 for i in range(self.random_walk_steps):
                     # going through each step of random walk and calculating the modified gradients with local energies
