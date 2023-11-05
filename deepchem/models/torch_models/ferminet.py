@@ -176,7 +176,7 @@ class Ferminet(torch.nn.Module):
             ) - self.calculate_electron_nuclear(
             ) + self.nuclear_nuclear_potential + self.calculate_kinetic_energy(
             )
-            return energy
+            return energy.detach()
 
     def calculate_nuclear_nuclear(self,) -> torch.Tensor:
         """
@@ -195,7 +195,7 @@ class Ferminet(torch.nn.Module):
             posinf=0.0,
             neginf=0.0)
         potential = (torch.sum(potential) / 2).unsqueeze(0)
-        return potential
+        return potential.detach()
 
     def calculate_electron_nuclear(self,) -> torch.Tensor:
         """
@@ -212,7 +212,7 @@ class Ferminet(torch.nn.Module):
             self.nuclear_charge,
             axis=-1),
                               axis=-1)
-        return potential
+        return potential.detach()
 
     def calculate_electron_electron(self,):
         """
@@ -229,7 +229,7 @@ class Ferminet(torch.nn.Module):
             neginf=0.0),
                                         axis=-1),
                               axis=-1) / 2
-        return potential
+        return potential.detach()
 
     def calculate_kinetic_energy(self,):
         """
@@ -253,12 +253,12 @@ class Ferminet(torch.nn.Module):
                 self.input), 2),
                                                             axis=-1),
                                                   axis=-1),
-                                        axis=-1)
+                                        axis=-1).detach()
         hessian_sum = torch.sum(torch.reshape(
             torch.func.hessian(lambda x: torch.log(torch.abs(self.forward(x))))(
                 self.input)[i, i, j, k, i, j, k],
             (self.batch_size, self.total_electron, 3)),
-                                axis=(1, 2))
+                                axis=(1, 2)).detach()
         print("test passed")
         kinetic_energy = -1 * 0.5 * (jacobian_square_sum + hessian_sum)
         jacobian_square_sum = None
