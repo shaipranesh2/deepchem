@@ -243,12 +243,17 @@ class Ferminet(torch.nn.Module):
         """
         # using functorch to calcualte hessian and jacobian in one go
         # using index tensors to index out the hessian elemennts corresponding to the same variable (cross-variable derivatives are ignored)
-        i = torch.arange(8).view(8, 1, 1, 1, 1, 1, 1)
+        i = torch.arange(self.batch_size).view(self.batch_size, 1, 1, 1, 1, 1,
+                                               1)
         j = torch.arange(self.total_electron).view(1, self.total_electron, 1, 1,
                                                    1, 1, 1)
         k = torch.arange(3).view(1, 1, 3, 1, 1, 1, 1)
+        funct = lambda z: torch.sum(torch.reshape(
+            torch.func.hessian(lambda x: torch.log(torch.abs(self.forward(x))))
+            (z)[i, i, j, k, i, j, k],
+            (self.batch_size, self.total_electron, 3)).detach(),
+                                    axis=(1, 2))
         self.input.requires_grad = False
-        hessian_sum = torch.tensor([])
         with torch.set_grad_enabled(False):
             jacobian_square_sum = torch.sum(torch.sum(torch.sum(torch.pow(
                 torch.func.jacrev(
@@ -257,27 +262,7 @@ class Ferminet(torch.nn.Module):
                                                                 axis=-1),
                                                       axis=-1),
                                             axis=-1)
-            tmp_batch = self.batch_size
-            self.batch_size = 8
-            self.ferminet_layer[0].batch_size = 8
-            self.ferminet_layer_envelope[0].batch_size = 8
-            tmp_input = self.input
-            for batch in range(int(tmp_batch / 8)):
-                hessian_sum = torch.cat(
-                    (hessian_sum,
-                     torch.sum(torch.reshape(
-                         torch.func.hessian(
-                             lambda x: torch.log(torch.abs(self.forward(x))))(
-                                 tmp_input[batch * 8:batch * 8 + 8])[i, i, j, k,
-                                                                     i, j, k],
-                         (8, self.total_electron, 3)).detach(),
-                               axis=(1, 2))))
-            self.batch_size = tmp_batch
-            self.ferminet_layer[0].batch_size = tmp_batch
-            self.ferminet_layer_envelope[0].batch_size = tmp_batch
-            self.input = tmp_input
-            tmp_input = None
-            tmp_batch = None
+            hessian_sum = torch.func.functionalize(funct)(self.input)
         kinetic_energy = -1 * 0.5 * (jacobian_square_sum + hessian_sum)
         jacobian_square_sum = None
         hessian_sum = None
