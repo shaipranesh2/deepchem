@@ -243,7 +243,7 @@ class Ferminet(torch.nn.Module):
         """
         # using functorch to calcualte hessian and jacobian in one go
         # using index tensors to index out the hessian elemennts corresponding to the same variable (cross-variable derivatives are ignored)
-        i = torch.arange(16).view(16, 1, 1, 1, 1, 1, 1)
+        i = torch.arange(8).view(8, 1, 1, 1, 1, 1, 1)
         j = torch.arange(self.total_electron).view(1, self.total_electron, 1, 1,
                                                    1, 1, 1)
         k = torch.arange(3).view(1, 1, 3, 1, 1, 1, 1)
@@ -258,20 +258,19 @@ class Ferminet(torch.nn.Module):
                                                       axis=-1),
                                             axis=-1)
             tmp_batch = self.batch_size
-            self.batch_size = 16
-            self.ferminet_layer[0].batch_size = 16
-            self.ferminet_layer_envelope[0].batch_size = 16
+            self.batch_size = 8
+            self.ferminet_layer[0].batch_size = 8
+            self.ferminet_layer_envelope[0].batch_size = 8
             tmp_input = self.input
-            for batch in range(int(tmp_batch / 16)):
+            for batch in range(int(tmp_batch / 8)):
                 hessian_sum = torch.cat(
                     (hessian_sum,
                      torch.sum(torch.reshape(
                          torch.func.hessian(
                              lambda x: torch.log(torch.abs(self.forward(x))))(
-                                 tmp_input[batch * 16:batch * 16 + 16])[i, i, j,
-                                                                        k, i, j,
-                                                                        k],
-                         (16, self.total_electron, 3)).detach(),
+                                 tmp_input[batch * 8:batch * 8 + 8])[i, i, j, k,
+                                                                     i, j, k],
+                         (8, self.total_electron, 3)).detach(),
                                axis=(1, 2))))
             self.batch_size = tmp_batch
             self.ferminet_layer[0].batch_size = tmp_batch
