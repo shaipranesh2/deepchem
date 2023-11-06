@@ -572,6 +572,7 @@ class FerminetModel(TorchModel):
                 self.model.running_diff = torch.zeros(self.batch_no)
 
         if (self.tasks == 'training'):
+            self.final_energy = 0.0
             with torch.no_grad():
                 hooks = list(
                     map(
@@ -596,6 +597,7 @@ class FerminetModel(TorchModel):
                                              min=median - 5 * variance)
                 self.energy_sampled = None  # releasing memory
                 energy_mean = torch.mean(clamped_energy)
+                self.final_energy = self.final_energy + energy_mean
                 print("Iteration " + str(iteration) + " energy:-" +
                       str(energy_mean) + " variance: " + str(variance) +
                       " acceptance: " + str(accept))
@@ -615,5 +617,7 @@ class FerminetModel(TorchModel):
                         torch.log(torch.abs(self.model.psi)))
                     self.loss_value.backward()
                 optimizer.step()
-
+            self.final_energy = self.final_energy / nb_epoch
+            print("total mean energy is: " + str(self.final_energy) +
+                  "hartrees")
             list(map(lambda hook: hook.remove(), hooks))
