@@ -132,8 +132,10 @@ class Ferminet(torch.nn.Module):
         two_electron_vector = self.input.unsqueeze(1) - self.input.unsqueeze(2)
         two_electron_distance = torch.linalg.norm(two_electron_vector + eps,
                                                   dim=3).unsqueeze(3)
-        two_electron = torch.cat((two_electron_vector, two_electron_distance),
-                                 dim=3)
+        two_electron = torch.cat(
+            (two_electron_vector.to(torch.device(self.device)),
+             two_electron_distance.to(torch.device(self.device))),
+            dim=3)
         two_electron = torch.reshape(
             two_electron,
             (self.batch_size, self.total_electron, self.total_electron, -1))
