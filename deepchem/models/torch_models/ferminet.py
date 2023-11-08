@@ -150,9 +150,12 @@ class Ferminet(torch.nn.Module):
         one_electron_vector_permuted = one_electron_vector.permute(0, 2, 1, 3)
 
         one_electron, _ = self.ferminet_layer[0].forward(
-            one_electron.to(torch.float32), two_electron.to(torch.float32))
+            one_electron.to(torch.float32).to(torch.device(self.device)),
+            two_electron.to(torch.float32)).to(torch.device(self.device))
         self.psi, self.psi_up, self.psi_down = self.ferminet_layer_envelope[
-            0].forward(one_electron, one_electron_vector_permuted)
+            0].forward(
+                one_electron.to(torch.device(self.device)),
+                one_electron_vector_permuted.to(torch.device(self.device)))
         return self.psi
 
     def loss(self,
