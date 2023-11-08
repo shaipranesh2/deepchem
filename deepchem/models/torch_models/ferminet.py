@@ -83,7 +83,7 @@ class Ferminet(torch.nn.Module):
         else:
             self.layers = len(n_one)
 
-        self.nucleon_pos = nucleon_pos
+        self.nucleon_pos = nucleon_pos.to(torch.device(self.device))
         self.determinant = determinant
         self.batch_size = batch_size
         self.spin = spin
