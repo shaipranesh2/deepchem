@@ -46,7 +46,8 @@ class Ferminet(torch.nn.Module):
                  n_one: List = [256, 256, 256, 256],
                  n_two: List = [32, 32, 32, 32],
                  determinant: int = 16,
-                 batch_size: int = 8) -> None:
+                 batch_size: int = 8,
+                 device: str = 'cpu') -> None:
         """
         Parameters:
         -----------
@@ -90,22 +91,26 @@ class Ferminet(torch.nn.Module):
         self.nuclear_charge = nuclear_charge
         self.n_one = n_one
         self.n_two = n_two
+        self.device = device
         self.ferminet_layer: torch.nn.ModuleList = torch.nn.ModuleList()
         self.ferminet_layer_envelope: torch.nn.ModuleList = torch.nn.ModuleList(
         )
-        self.running_diff: torch.Tensor = torch.zeros(self.batch_size)
+        self.running_diff: torch.Tensor = torch.zeros(self.batch_size).to(
+            torch.device(self.device))
         self.nuclear_nuclear_potential: torch.Tensor = self.calculate_nuclear_nuclear(
-        )
+        ).to(torch.device(self.device))
 
         self.ferminet_layer.append(
             FerminetElectronFeature(self.n_one, self.n_two,
                                     self.nucleon_pos.size()[0], self.batch_size,
                                     self.total_electron,
-                                    [self.spin[0], self.spin[1]]))
+                                    [self.spin[0], self.spin[1]]).to(
+                                        torch.device(self.device)))
         self.ferminet_layer_envelope.append(
             FerminetEnvelope(self.n_one, self.n_two, self.total_electron,
                              self.batch_size, [self.spin[0], self.spin[1]],
-                             self.nucleon_pos.size()[0], self.determinant))
+                             self.nucleon_pos.size()[0],
+                             self.determinant).to(torch.device(self.device)))
 
     def forward(self, input: np.ndarray) -> torch.Tensor:
         """
@@ -405,7 +410,8 @@ class FerminetModel(TorchModel):
         self.model = Ferminet(nucl,
                               spin=(self.up_spin, self.down_spin),
                               nuclear_charge=torch.Tensor(charge),
-                              batch_size=self.batch_no)
+                              batch_size=self.batch_no,
+                              device=self.device).to(torch.device(self.device))
 
         self.molecule: ElectronSampler = ElectronSampler(
             batch_no=self.batch_no,
