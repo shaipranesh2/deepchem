@@ -304,7 +304,8 @@ class FerminetModel(TorchModel):
                  batch_no: int = 8,
                  random_walk_steps: int = 11,
                  steps_per_update: int = 11,
-                 tasks: str = 'pretraining'):
+                 tasks: str = 'pretraining',
+                 device: str = 'cpu'):
         """
     Parameters:
     -----------
@@ -349,6 +350,7 @@ class FerminetModel(TorchModel):
         self.loss_value: torch.Tensor = torch.tensor(0)
         self.tasks = tasks
         self.energy_sampled = torch.tensor([])
+        self.device = device
 
         no_electrons = []
         nucleons = []
@@ -483,7 +485,8 @@ class FerminetModel(TorchModel):
         --------
         A numpy array containing the joint probability of the hartree fock and the sampled electron's position coordinates
         """
-        x_torch = torch.from_numpy(x).view(self.batch_no, -1, 3)
+        x_torch = torch.from_numpy(x).view(self.batch_no, -1,
+                                           3).to(torch.device(self.device))
         if self.tasks == 'pretraining':
             x_torch.requires_grad = True
         else:
@@ -523,7 +526,7 @@ class FerminetModel(TorchModel):
 
     def train(self,
               nb_epoch: int = 200,
-              lr: float = 0.0002,
+              lr: float = 0.002,
               weight_decay: float = 0.0):
         """
         function to run training or pretraining.
@@ -537,7 +540,7 @@ class FerminetModel(TorchModel):
         weight_decay: float (default: 0.0001)
             contains the weight_decay for the model fitting
         """
-        std = 0.02
+        std = 0.12
 
         # hook function below is an efficient way modifying the gradients on the go rather than looping
         def energy_hook(grad, random_walk_steps):
@@ -558,11 +561,7 @@ class FerminetModel(TorchModel):
             for iteration in range(nb_epoch):
                 optimizer.zero_grad()
                 self.loss_value = torch.tensor(0.0)
-                accept = self.molecule.move(stddev=std)
-                if accept > 0.85:
-                    std *= 1.1
-                else:
-                    std /= 1.1
+                accept = self.molecule.move(stddev=0.06)
                 self.loss_value = (torch.mean(self.model.running_diff) /
                                    self.random_walk_steps)
                 self.loss_value.backward()
@@ -585,10 +584,11 @@ class FerminetModel(TorchModel):
                 self.energy_sampled = torch.tensor([])
                 # the move function calculates the energy of sampled electrons and samples new set of electrons (does not calculate loss)
                 accept = self.molecule.move(stddev=std)
-                if accept > 0.85:
-                    std *= 1.1
-                else:
-                    std /= 1.1
+                if iteration % 100 == 0:
+                    if accept > 0.90:
+                        std *= 1.1
+                    else:
+                        std /= 1.1
                 median, _ = torch.median(self.energy_sampled, axis=0)
                 variance = torch.mean(torch.abs(self.energy_sampled - median))
                 # clipping local energies which are away 5 times the variance from the median
