@@ -5550,6 +5550,7 @@ class FerminetElectronFeature(torch.nn.Module):
                                             dim=1).to(torch.device(self.device))
                 if l == 0 or (self.n_one[l] != self.n_one[l - 1]) or (
                         self.n_two[l] != self.n_two[l - 1]):
+                    print(self.device)
                     one_electron_tmp[:, i, :] = torch.tanh(
                         self.v[l](f)) + self.projection_module[0](
                             one_electron[:, i, :])
