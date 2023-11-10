@@ -538,7 +538,9 @@ class FerminetModel(TorchModel):
     def train(self,
               nb_epoch: int = 200,
               lr: float = 0.002,
-              weight_decay: float = 0.0):
+              weight_decay: float = 0.0,
+              std: float = 0.08,
+              std_init: float = 0.04):
         """
         function to run training or pretraining.
 
@@ -551,7 +553,6 @@ class FerminetModel(TorchModel):
         weight_decay: float (default: 0.0001)
             contains the weight_decay for the model fitting
         """
-        std = 0.08
 
         # hook function below is an efficient way modifying the gradients on the go rather than looping
         def energy_hook(grad, random_walk_steps):
@@ -572,7 +573,7 @@ class FerminetModel(TorchModel):
             for iteration in range(nb_epoch):
                 optimizer.zero_grad()
                 self.loss_value = torch.tensor(0.0)
-                accept = self.molecule.move(stddev=0.04)
+                accept = self.molecule.move(stddev=std_init)
                 self.loss_value = (torch.mean(self.model.running_diff) /
                                    self.random_walk_steps)
                 self.loss_value.backward()
