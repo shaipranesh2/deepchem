@@ -106,7 +106,7 @@ class Ferminet(torch.nn.Module):
                                     self.total_electron,
                                     [self.spin[0], self.spin[1]]).to(
                                         torch.device(self.device)).to(
-                                            torch.device('cpu')))
+                                            torch.device(self.device)))
         self.ferminet_layer_envelope.append(
             FerminetEnvelope(self.n_one, self.n_two, self.total_electron,
                              self.batch_size, [self.spin[0], self.spin[1]],

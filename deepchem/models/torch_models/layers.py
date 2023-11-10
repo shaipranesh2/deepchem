@@ -5420,15 +5420,8 @@ class FerminetElectronFeature(torch.nn.Module):
     torch.Size([8, 10, 10, 16])
     """
 
-    def __init__(
-        self,
-        n_one: List[int],
-        n_two: List[int],
-        no_of_atoms: int,
-        batch_size: int,
-        total_electron: int,
-        spin: List[int],
-    ):
+    def __init__(self, n_one: List[int], n_two: List[int], no_of_atoms: int,
+                 batch_size: int, total_electron: int, spin: List[int]):
         """
         Parameters
         ----------
