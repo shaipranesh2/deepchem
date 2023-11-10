@@ -435,7 +435,7 @@ class FerminetModel(TorchModel):
         )  # sample the electrons using the electron sampler
         self.molecule.gauss_initialize_position(
             self.electron_no,
-            stddev=1.0)  # initialize the position of the electrons
+            stddev=2.0)  # initialize the position of the electrons
         self.prepare_hf_solution()
         super(FerminetModel, self).__init__(self.model, loss=torch.nn.MSELoss())
 
@@ -541,7 +541,7 @@ class FerminetModel(TorchModel):
         self.tasks = 'training'
         for _ in range(burn_in):
             self.molecule.gauss_initialize_position(self.electron_no,
-                                                    stddev=1.0)
+                                                    stddev=2.0)
 
     def train(self,
               nb_epoch: int = 200,
