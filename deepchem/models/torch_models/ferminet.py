@@ -151,7 +151,7 @@ class Ferminet(torch.nn.Module):
 
         one_electron, _ = self.ferminet_layer[0].forward(
             one_electron.to(torch.float32).to(torch.device(self.device)),
-            two_electron.to(torch.float32)).to(torch.device(self.device))
+            two_electron.to(torch.float32))
         self.psi, self.psi_up, self.psi_down = self.ferminet_layer_envelope[
             0].forward(
                 one_electron.to(torch.device(self.device)),
