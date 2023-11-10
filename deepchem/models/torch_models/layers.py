@@ -5562,8 +5562,8 @@ class FerminetElectronFeature(torch.nn.Module):
                         self.v[l](f)) + one_electron[:, i, :]
                     two_electron_tmp[:, i, :, :] = torch.tanh(self.w[l](
                         two_electron[:, i, :, :])) + two_electron[:, i, :]
-            one_electron = one_electron_tmp
-            two_electron = two_electron_tmp
+            one_electron = one_electron_tmp.to(torch.device(self.device))
+            two_electron = two_electron_tmp.to(torch.device(self.device))
 
         return one_electron, two_electron
 
