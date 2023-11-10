@@ -551,7 +551,7 @@ class FerminetModel(TorchModel):
         weight_decay: float (default: 0.0001)
             contains the weight_decay for the model fitting
         """
-        std = 0.1
+        std = 0.075
 
         # hook function below is an efficient way modifying the gradients on the go rather than looping
         def energy_hook(grad, random_walk_steps):
