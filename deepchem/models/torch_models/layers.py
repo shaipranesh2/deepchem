@@ -5638,6 +5638,7 @@ class FerminetEnvelope(torch.nn.Module):
         self.sigma = torch.nn.ParameterList()
         self.pi = torch.nn.ParameterList()
         self.wdet = torch.nn.ParameterList()
+        self.device = device
 
         for i in range(self.determinant):
             self.wdet.append(torch.nn.init.normal(torch.zeros(1)).squeeze(0))
@@ -5666,11 +5667,11 @@ class FerminetEnvelope(torch.nn.Module):
         psi_up: torch.Tensor
             Torch tensor with a scalar value containing the sampled wavefunction value for each batch.
         """
-        psi = torch.zeros(self.batch_size)
+        psi = torch.zeros(self.batch_size).to(torch.device(self.device))
         psi_up = torch.zeros(self.batch_size, self.determinant, self.spin[0],
-                             self.spin[0])
+                             self.spin[0]).to(torch.device(self.device))
         psi_down = torch.zeros(self.batch_size, self.determinant, self.spin[1],
-                               self.spin[1])
+                               self.spin[1]).to(torch.device(self.device))
 
         for k in range(self.determinant):
             for i in range(self.spin[0]):
