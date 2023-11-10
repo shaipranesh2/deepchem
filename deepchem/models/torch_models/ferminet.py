@@ -180,12 +180,14 @@ class Ferminet(torch.nn.Module):
                 torch.device(self.device))
             psi_down_mo_torch = torch.from_numpy(psi_down_mo).unsqueeze(1).to(
                 torch.device(self.device))
-            self.running_diff = self.running_diff + criterion(
-                self.psi_up.to(torch.device(self.device)),
-                psi_up_mo_torch.float()).to(torch.device(
-                    self.device)) + criterion(
-                        self.psi_down.to(torch.device(self.device)),
-                        psi_down_mo_torch.float()).to(torch.device(self.device))
+            self.running_diff = self.running_diff.to(torch.device(
+                self.device)) + criterion(
+                    self.psi_up.to(torch.device(self.device)),
+                    psi_up_mo_torch.float()).to(torch.device(
+                        self.device)) + criterion(
+                            self.psi_down.to(torch.device(self.device)),
+                            psi_down_mo_torch.float()).to(
+                                torch.device(self.device))
         else:
             energy = self.calculate_electron_electron(
             ) - self.calculate_electron_nuclear(
