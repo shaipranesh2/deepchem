@@ -127,7 +127,7 @@ class Ferminet(torch.nn.Module):
             contains the wavefunction - 'psi' value. It is in the shape (batch_size), where each row corresponds to the solution of one of the batches
         """
         # creating one and two electron features
-        eps = torch.tensor(1e-36)
+        eps = torch.tensor(1e-36).to(torch.device(self.device))
         self.input = input.reshape((self.batch_size, -1, 3))
         two_electron_vector = self.input.unsqueeze(1) - self.input.unsqueeze(2)
         two_electron_distance = torch.linalg.norm(two_electron_vector + eps,
@@ -176,8 +176,10 @@ class Ferminet(torch.nn.Module):
         """
         criterion = torch.nn.MSELoss()
         if pretrain[0]:
-            psi_up_mo_torch = torch.from_numpy(psi_up_mo).unsqueeze(1)
-            psi_down_mo_torch = torch.from_numpy(psi_down_mo).unsqueeze(1)
+            psi_up_mo_torch = torch.from_numpy(psi_up_mo).unsqueeze(1).to(
+                torch.device(self.device))
+            psi_down_mo_torch = torch.from_numpy(psi_down_mo).unsqueeze(1).to(
+                torch.device(self.device))
             self.running_diff = self.running_diff + criterion(
                 self.psi_up, psi_up_mo_torch.float()) + criterion(
                     self.psi_down, psi_down_mo_torch.float())
