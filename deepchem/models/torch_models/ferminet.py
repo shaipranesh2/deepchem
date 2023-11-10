@@ -522,6 +522,9 @@ class FerminetModel(TorchModel):
                                                                  2)]
             return 2 * np.log(np.abs(np_output))
 
+        if self.tasks == 'burn':
+            return 2 * np.log(np.abs(np_output))
+
         if self.tasks == 'training':
             energy = self.model.loss(pretrain=[False])
             self.energy_sampled = torch.cat(
@@ -538,16 +541,20 @@ class FerminetModel(TorchModel):
         burn_in:int (default: 100)
             number of steps for to perform burn-in before the aactual training.
         """
-        self.tasks = 'training'
+        self.tasks = 'burn'
+        self.molecule.gauss_initialize_position(self.electron_no, stddev=1.0)
+        tmp_x = self.molecule.x
         for _ in range(burn_in):
-            self.molecule.gauss_initialize_position(self.electron_no,
-                                                    stddev=1.0)
+            self.molecule.move(stddev=0.02)
+            self.molecule.x = tmp_x
+        self.molecule.move(stddev=0.02)
+        self.tasks = 'training'
 
     def train(self,
               nb_epoch: int = 200,
               lr: float = 0.002,
               weight_decay: float = 0.0,
-              std: float = 0.08,
+              std: float = 0.02,
               std_init: float = 0.04):
         """
         function to run training or pretraining.
