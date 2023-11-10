@@ -525,7 +525,8 @@ class FerminetModel(TorchModel):
         if self.tasks == 'training':
             energy = self.model.loss(pretrain=[False])
             self.energy_sampled = torch.cat(
-                (self.energy_sampled, energy.unsqueeze(0)))
+                (self.energy_sampled.to(torch.device(self.device)),
+                 energy.unsqueeze(0).to(torch.device(self.device))))
             return 2 * np.log(np.abs(np_output))
 
     def prepare_train(self, burn_in: int = 100):
