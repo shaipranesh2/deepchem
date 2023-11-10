@@ -632,7 +632,8 @@ class FerminetModel(TorchModel):
                     input_electron = sample_history[i]
                     input_electron.requires_grad = True
                     energy_local = torch.mean(clamped_energy[i])
-                    self.model.forward(input_electron)
+                    self.model.forward(
+                        input_electron.to(torch.device(self.device)))
                     self.loss_value = torch.mean(
                         torch.log(torch.abs(self.model.psi)))
                     self.loss_value.backward()
