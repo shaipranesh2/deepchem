@@ -572,7 +572,7 @@ class FerminetModel(TorchModel):
             for iteration in range(nb_epoch):
                 optimizer.zero_grad()
                 self.loss_value = torch.tensor(0.0)
-                accept = self.molecule.move(stddev=0.06)
+                accept = self.molecule.move(stddev=0.04)
                 self.loss_value = (torch.mean(self.model.running_diff) /
                                    self.random_walk_steps)
                 self.loss_value.backward()
