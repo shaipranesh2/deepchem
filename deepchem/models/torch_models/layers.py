@@ -5421,7 +5421,8 @@ class FerminetElectronFeature(torch.nn.Module):
     """
 
     def __init__(self, n_one: List[int], n_two: List[int], no_of_atoms: int,
-                 batch_size: int, total_electron: int, spin: List[int]):
+                 batch_size: int, total_electron: int, spin: List[int],
+                 device: str):
         """
         Parameters
         ----------
@@ -5452,6 +5453,7 @@ class FerminetElectronFeature(torch.nn.Module):
         self.batch_size = batch_size
         self.total_electron = total_electron
         self.spin = spin
+        self.device = device
 
         self.v: torch.nn.ModuleList = torch.nn.ModuleList()
         self.w: torch.nn.ModuleList = torch.nn.ModuleList()
@@ -5545,7 +5547,7 @@ class FerminetElectronFeature(torch.nn.Module):
                     two_electron[:, i, self.spin[0]:, :], dim=1)
                 f: torch.Tensor = torch.cat((one_electron[:, i, :], g_one_up,
                                              g_one_down, g_two_up, g_two_down),
-                                            dim=1)
+                                            dim=1).to(torch.device(self.device))
                 if l == 0 or (self.n_one[l] != self.n_one[l - 1]) or (
                         self.n_two[l] != self.n_two[l - 1]):
                     one_electron_tmp[:, i, :] = torch.tanh(
@@ -5589,7 +5591,7 @@ class FerminetEnvelope(torch.nn.Module):
 
     def __init__(self, n_one: List[int], n_two: List[int], total_electron: int,
                  batch_size: int, spin: List[int], no_of_atoms: int,
-                 determinant: int):
+                 determinant: int, device: str):
         """
         Parameters
         ----------
