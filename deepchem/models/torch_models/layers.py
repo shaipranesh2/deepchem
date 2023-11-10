@@ -5540,7 +5540,6 @@ class FerminetElectronFeature(torch.nn.Module):
                 self.batch_size, self.total_electron, self.total_electron,
                 self.n_two[l])
             for i in range(self.total_electron):
-                print(i)
                 # Calculating two-electron feature's average
                 g_two_up: torch.Tensor = torch.mean(
                     two_electron[:, i, :self.spin[0], :], dim=1)
