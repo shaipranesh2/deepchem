@@ -127,11 +127,11 @@ class Ferminet(torch.nn.Module):
             contains the wavefunction - 'psi' value. It is in the shape (batch_size), where each row corresponds to the solution of one of the batches
         """
         # creating one and two electron features
-        eps = torch.tensor(1e-36).to(torch.device(self.device))
         self.input = input.reshape((self.batch_size, -1, 3))
         two_electron_vector = self.input.unsqueeze(1) - self.input.unsqueeze(2)
-        two_electron_distance = torch.linalg.norm(two_electron_vector + eps,
-                                                  dim=3).unsqueeze(3)
+        two_electron_distance = (
+            (torch.linalg.norm(two_electron_vector, dim=3) - torch.eye(3)) *
+            (1 - torch.eye(3))).unsqueeze(3)
         two_electron = torch.cat(
             (two_electron_vector.to(torch.device(self.device)),
              two_electron_distance.to(torch.device(self.device))),
@@ -150,8 +150,8 @@ class Ferminet(torch.nn.Module):
         one_electron_vector_permuted = one_electron_vector.permute(0, 2, 1, 3)
 
         one_electron, _ = self.ferminet_layer[0].forward(
-            one_electron.to(torch.float32).to(torch.device(self.device)),
-            two_electron.to(torch.float32).to(torch.device(self.device)))
+            one_electron.to(torch.float64).to(torch.device(self.device)),
+            two_electron.to(torch.float64).to(torch.device(self.device)))
         self.psi, self.psi_up, self.psi_down = self.ferminet_layer_envelope[
             0].forward(
                 one_electron.to(torch.device(self.device)),
@@ -183,10 +183,10 @@ class Ferminet(torch.nn.Module):
             self.running_diff = self.running_diff.to(torch.device(
                 self.device)) + criterion(
                     self.psi_up.to(torch.device(self.device)),
-                    psi_up_mo_torch.float()).to(torch.device(
+                    psi_up_mo_torch.double()).to(torch.device(
                         self.device)) + criterion(
                             self.psi_down.to(torch.device(self.device)),
-                            psi_down_mo_torch.float()).to(
+                            psi_down_mo_torch.double()).to(
                                 torch.device(self.device))
         else:
             energy = self.calculate_electron_electron(
@@ -207,7 +207,7 @@ class Ferminet(torch.nn.Module):
 
         potential = torch.nan_to_num(
             (self.nuclear_charge * 1 /
-             torch.cdist(self.nucleon_pos.float(), self.nucleon_pos.float()) *
+             torch.cdist(self.nucleon_pos.double(), self.nucleon_pos.double()) *
              self.nuclear_charge.unsqueeze(1)),
             posinf=0.0,
             neginf=0.0)
@@ -225,7 +225,7 @@ class Ferminet(torch.nn.Module):
         """
 
         potential = torch.sum(torch.sum(
-            (1 / torch.cdist(self.input.float(), self.nucleon_pos.float())) *
+            (1 / torch.cdist(self.input.double(), self.nucleon_pos.double())) *
             self.nuclear_charge,
             axis=-1),
                               axis=-1)
@@ -241,7 +241,7 @@ class Ferminet(torch.nn.Module):
         A torch tensor of a scalar value containing the electron-electron potential term.
         """
         potential = torch.sum(torch.sum(torch.nan_to_num(
-            (1 / torch.cdist(self.input.float(), self.input.float())),
+            (1 / torch.cdist(self.input.double(), self.input.double())),
             posinf=0.0,
             neginf=0.0),
                                         axis=-1),
@@ -270,15 +270,13 @@ class Ferminet(torch.nn.Module):
                 self.input), 2),
                                                             axis=-1),
                                                   axis=-1),
-                                        axis=-1)
+                                        axis=-1).detach()
         hessian_sum = torch.sum(torch.reshape(
             torch.func.hessian(lambda x: torch.log(torch.abs(self.forward(x))))(
                 self.input)[i, i, j, k, i, j, k],
-            (self.batch_size, self.total_electron, 3)).detach(),
-                                axis=(1, 2))
+            (self.batch_size, self.total_electron, 3)),
+                                axis=(1, 2)).detach()
         kinetic_energy = -1 * 0.5 * (jacobian_square_sum + hessian_sum)
-        jacobian_square_sum = None
-        hessian_sum = None
         return kinetic_energy
 
 
@@ -319,8 +317,8 @@ class FerminetModel(TorchModel):
                  ion_charge: int,
                  seed: Optional[int] = None,
                  batch_no: int = 8,
-                 random_walk_steps: int = 11,
-                 steps_per_update: int = 11,
+                 random_walk_steps: int = 10,
+                 steps_per_update: int = 10,
                  tasks: str = 'pretraining',
                  device: str = 'cpu'):
         """
@@ -435,7 +433,7 @@ class FerminetModel(TorchModel):
         )  # sample the electrons using the electron sampler
         self.molecule.gauss_initialize_position(
             self.electron_no,
-            stddev=1.0)  # initialize the position of the electrons
+            stddev=0.5)  # initialize the position of the electrons
         self.prepare_hf_solution()
         super(FerminetModel, self).__init__(self.model, loss=torch.nn.MSELoss())
 
@@ -481,7 +479,7 @@ class FerminetModel(TorchModel):
                 self.nucleon_coordinates[i][1][0]) + " " + str(
                     self.nucleon_coordinates[i][1][1]) + " " + str(
                         self.nucleon_coordinates[i][1][2]) + ";"
-        self.mol = pyscf.gto.Mole(atom=molecule, basis='sto-3g')
+        self.mol = pyscf.gto.Mole(atom=molecule, basis='sto-6g')
         self.mol.parse_arg = False
         self.mol.unit = 'Bohr'
         self.mol.spin = (self.up_spin - self.down_spin)
@@ -518,8 +516,8 @@ class FerminetModel(TorchModel):
                 np.diagonal(up_spin_mo, axis1=1, axis2=2), axis=1) * np.prod(
                     np.diagonal(down_spin_mo, axis1=1, axis2=2), axis=1)
             self.model.loss(up_spin_mo, down_spin_mo)
-            np_output[:int(self.batch_no / 2)] = hf_product[:int(self.batch_no /
-                                                                 2)]
+            #np_output[:int(self.batch_no / 2)] = hf_product[:int(self.batch_no /
+            #                                                     2)]
             return 2 * np.log(np.abs(np_output))
 
         if self.tasks == 'burn':
@@ -542,19 +540,16 @@ class FerminetModel(TorchModel):
             number of steps for to perform burn-in before the aactual training.
         """
         self.tasks = 'burn'
-        self.molecule.gauss_initialize_position(self.electron_no, stddev=1.0)
-        tmp_x = self.molecule.x
         for _ in range(burn_in):
-            self.molecule.move(stddev=0.02)
-            self.molecule.x = tmp_x
-        self.molecule.move(stddev=0.02)
+            self.molecule.gauss_initialize_position(self.electron_no,
+                                                    stddev=0.5)
         self.tasks = 'training'
 
     def train(self,
               nb_epoch: int = 200,
-              lr: float = 0.002,
-              weight_decay: float = 0.0,
-              std: float = 0.02,
+              lr: float = 0.0006,
+              weight_decay: float = 0,
+              std: float = 0.12,
               std_init: float = 0.04):
         """
         function to run training or pretraining.
@@ -576,9 +571,9 @@ class FerminetModel(TorchModel):
             """
             # using non-local variables as a means of parameter passing
             nonlocal energy_local, energy_mean
-            new_grad = (2 / self.random_walk_steps) * (
-                (energy_local - energy_mean) * grad).float()
-            return new_grad
+            new_grad = (2 / random_walk_steps) * (
+                (energy_local - energy_mean) * grad)
+            return new_grad.double()
 
         optimizer = torch.optim.Adam(self.model.parameters(),
                                      lr=lr,
@@ -589,8 +584,14 @@ class FerminetModel(TorchModel):
                 optimizer.zero_grad()
                 self.loss_value = torch.tensor(0.0)
                 accept = self.molecule.move(stddev=std_init)
-                self.loss_value = (torch.mean(self.model.running_diff) /
-                                   self.random_walk_steps)
+                if iteration % 20 == 0:
+                    if accept > 0.55:
+                        std_init *= 1.2
+                    else:
+                        std_init /= 1.2
+                self.loss_value = (
+                    torch.mean(self.model.running_diff.double()) /
+                    self.random_walk_steps).double()
                 self.loss_value.backward()
                 optimizer.step()
                 print("loss for iteration " + str(iteration) + " : " +
@@ -598,6 +599,12 @@ class FerminetModel(TorchModel):
                 self.model.running_diff = torch.zeros(self.batch_no)
 
         if (self.tasks == 'training'):
+            energy_local = None
+            model = self.model
+            loss_value: torch.tensor = torch.tensor([])
+            optimizer = torch.optim.Adam(model.parameters(),
+                                         lr=lr,
+                                         weight_decay=weight_decay)
             self.final_energy = 0.0
             with torch.no_grad():
                 hooks = list(
@@ -611,17 +618,17 @@ class FerminetModel(TorchModel):
                 self.energy_sampled = torch.tensor([])
                 # the move function calculates the energy of sampled electrons and samples new set of electrons (does not calculate loss)
                 accept = self.molecule.move(stddev=std)
-                if iteration % 100 == 0:
-                    if accept > 0.87:
-                        std *= 1.1
+                if iteration % 20 == 0:
+                    if accept > 0.55:
+                        std_init *= 1.2
                     else:
-                        std /= 1.1
+                        std_init /= 1.2
                 median, _ = torch.median(self.energy_sampled, axis=0)
                 variance = torch.mean(torch.abs(self.energy_sampled - median))
                 # clipping local energies which are away 5 times the variance from the median
                 clamped_energy = torch.clamp(self.energy_sampled,
                                              max=median + 5 * variance,
-                                             min=median - 5 * variance)
+                                             min=median - 5 * variance)[:10, :]
                 self.energy_sampled = None  # releasing memory
                 energy_mean = torch.mean(clamped_energy)
                 self.final_energy = self.final_energy + energy_mean

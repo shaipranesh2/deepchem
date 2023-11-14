@@ -5463,35 +5463,39 @@ class FerminetElectronFeature(torch.nn.Module):
         self.v.append(
             nn.Linear(8 + 3 * 4 * self.no_of_atoms, self.n_one[0], bias=True))
         #filling the weights with 1e-3 for faster convergence
-        self.v[0].weight.data = torch.randn(size=(
-            self.v[0].weight.shape[0], self.v[0].weight.shape[1])) / math.sqrt(
-                self.v[0].weight.shape[1])
-        self.v[0].bias.data = torch.randn(size=(self.v[0].weight.shape[0],))
+        self.v[0].weight.data = (torch.randn(size=(self.v[0].weight.shape[0],
+                                                   self.v[0].weight.shape[1])) /
+                                 math.sqrt(self.v[0].weight.shape[1])).double()
+        self.v[0].bias.data = (torch.randn(
+            size=(self.v[0].weight.shape[0],))).double()
 
         self.w.append(nn.Linear(4, self.n_two[0], bias=True))
-        self.w[0].weight.data = torch.randn(size=(
-            self.w[0].weight.shape[0], self.w[0].weight.shape[1])) / math.sqrt(
-                self.w[0].weight.shape[1])
-        self.w[0].bias.data = torch.randn(size=(self.w[0].weight.shape[0],))
+        self.w[0].weight.data = (torch.randn(size=(self.w[0].weight.shape[0],
+                                                   self.w[0].weight.shape[1])) /
+                                 math.sqrt(self.w[0].weight.shape[1])).double()
+        self.w[0].bias.data = (torch.randn(
+            size=(self.w[0].weight.shape[0],))).double()
 
         for i in range(1, self.layer_size):
             self.v.append(
                 nn.Linear(3 * self.n_one[i - 1] + 2 * self.n_two[i - 1],
                           n_one[i],
                           bias=True))
-            self.v[i].weight.data = torch.randn(
-                size=(self.v[i].weight.shape[0],
-                      self.v[i].weight.shape[1])) / math.sqrt(
-                          self.v[i].weight.shape[1])
-            self.v[i].bias.data = torch.randn(size=(self.v[i].weight.shape[0],))
+            self.v[i].weight.data = (
+                torch.randn(size=(self.v[i].weight.shape[0],
+                                  self.v[i].weight.shape[1])) /
+                math.sqrt(self.v[i].weight.shape[1])).double()
+            self.v[i].bias.data = (torch.randn(
+                size=(self.v[i].weight.shape[0],))).double()
 
             self.w.append(nn.Linear(self.n_two[i - 1], self.n_two[i],
                                     bias=True))
-            self.w[i].weight.data = torch.randn(
-                size=(self.w[i].weight.shape[0],
-                      self.w[i].weight.shape[1])) / math.sqrt(
-                          self.w[i].weight.shape[1])
-            self.w[i].bias.data = torch.randn(size=(self.w[i].weight.shape[0],))
+            self.w[i].weight.data = (
+                torch.randn(size=(self.w[i].weight.shape[0],
+                                  self.w[i].weight.shape[1])) /
+                math.sqrt(self.w[i].weight.shape[1])).double()
+            self.w[i].bias.data = torch.randn(
+                size=(self.w[i].weight.shape[0],)).double()
 
         self.projection_module = nn.ModuleList()
         self.projection_module.append(
@@ -5501,14 +5505,14 @@ class FerminetElectronFeature(torch.nn.Module):
                 bias=False,
             ))
         self.projection_module.append(nn.Linear(4, n_two[0], bias=False))
-        self.projection_module[0].weight.data = torch.randn(
-            size=(self.projection_module[0].weight.shape[0],
-                  self.projection_module[0].weight.shape[1])) / math.sqrt(
-                      self.projection_module[0].weight.shape[1])
-        self.projection_module[1].weight.data = torch.randn(
-            size=(self.projection_module[1].weight.shape[0],
-                  self.projection_module[1].weight.shape[1])) / math.sqrt(
-                      self.projection_module[1].weight.shape[1])
+        self.projection_module[0].weight.data = (
+            torch.randn(size=(self.projection_module[0].weight.shape[0],
+                              self.projection_module[0].weight.shape[1])) /
+            math.sqrt(self.projection_module[0].weight.shape[1])).double()
+        self.projection_module[1].weight.data = (
+            torch.randn(size=(self.projection_module[1].weight.shape[0],
+                              self.projection_module[1].weight.shape[1])) /
+            math.sqrt(self.projection_module[1].weight.shape[1])).double()
 
     def forward(self, one_electron: torch.Tensor, two_electron: torch.Tensor):
         """
@@ -5534,35 +5538,36 @@ class FerminetElectronFeature(torch.nn.Module):
                 one_electron[:, :self.spin[0], :], dim=-2)
             g_one_down: torch.Tensor = torch.mean(
                 one_electron[:, self.spin[0]:, :], dim=-2)
-            one_electron_tmp: torch.Tensor = torch.zeros(
-                self.batch_size, self.total_electron, self.n_one[l])
-            two_electron_tmp: torch.Tensor = torch.zeros(
-                self.batch_size, self.total_electron, self.total_electron,
-                self.n_two[l])
+            one_electron_tmp = []
+            two_electron_tmp = []
             for i in range(self.total_electron):
                 # Calculating two-electron feature's average
                 g_two_up: torch.Tensor = torch.mean(
                     two_electron[:, i, :self.spin[0], :], dim=1)
                 g_two_down: torch.Tensor = torch.mean(
                     two_electron[:, i, self.spin[0]:, :], dim=1)
-                f: torch.Tensor = torch.cat((one_electron[:, i, :], g_one_up,
-                                             g_one_down, g_two_up, g_two_down),
-                                            dim=1).to(torch.device(self.device))
+                f: torch.Tensor = torch.cat(
+                    (one_electron[:, i, :], g_one_up, g_one_down, g_two_up,
+                     g_two_down),
+                    dim=1).double().to(torch.device(self.device))
                 if l == 0 or (self.n_one[l] != self.n_one[l - 1]) or (
                         self.n_two[l] != self.n_two[l - 1]):
-                    one_electron_tmp[:, i, :] = torch.tanh(
-                        self.v[l](f)) + self.projection_module[0](
-                            one_electron[:, i, :])
-                    two_electron_tmp[:, i, :, :] = torch.tanh(self.w[l](
-                        two_electron[:, i, :, :])) + self.projection_module[1](
-                            two_electron[:, i, :, :])
+                    one_electron_tmp.append((torch.tanh(self.v[l](f))) +
+                                            self.projection_module[0]
+                                            (one_electron[:, i, :]))
+                    two_electron_tmp.append(
+                        (torch.tanh(self.w[l](two_electron[:, i, :, :]))) +
+                        self.projection_module[1](two_electron[:, i, :, :]))
                 else:
-                    one_electron_tmp[:, i, :] = torch.tanh(
-                        self.v[l](f)) + one_electron[:, i, :]
-                    two_electron_tmp[:, i, :, :] = torch.tanh(self.w[l](
-                        two_electron[:, i, :, :])) + two_electron[:, i, :]
-            one_electron = one_electron_tmp.to(torch.device(self.device))
-            two_electron = two_electron_tmp.to(torch.device(self.device))
+                    one_electron_tmp.append(
+                        (torch.tanh(self.v[l](f)) + one_electron[:, i, :]))
+                    two_electron_tmp.append(
+                        (torch.tanh(self.w[l](two_electron[:, i, :, :])) +
+                         two_electron[:, i, :, :]))
+            one_electron = torch.stack(one_electron_tmp,
+                                       dim=1).to(torch.device(self.device))
+            two_electron = torch.stack(two_electron_tmp,
+                                       dim=1).to(torch.device(self.device))
 
         return one_electron, two_electron
 
@@ -5640,16 +5645,17 @@ class FerminetEnvelope(torch.nn.Module):
         self.device = device
 
         for i in range(self.determinant):
-            self.wdet.append(torch.nn.init.normal(torch.zeros(1)).squeeze(0))
+            self.wdet.append(
+                torch.nn.init.normal(torch.zeros(1)).squeeze(0).double())
             for j in range(self.total_electron):
                 self.envelope_w.append(
                     (torch.nn.init.normal(torch.zeros(n_one[-1], 1),) /
-                     math.sqrt(n_one[-1])).squeeze(-1))
+                     math.sqrt(n_one[-1])).squeeze(-1).double())
                 self.envelope_g.append(
-                    (torch.nn.init.normal(torch.zeros(1))).squeeze(0))
+                    (torch.nn.init.normal(torch.zeros(1))).squeeze(0).double())
                 for k in range(self.no_of_atoms):
-                    self.pi.append((torch.zeros(1)))
-                    self.sigma.append(torch.eye(3))
+                    self.pi.append((torch.zeros(1)).double())
+                    self.sigma.append(torch.eye(3).double())
 
     def forward(self, one_electron: torch.Tensor,
                 one_electron_vector_permuted: torch.Tensor):
@@ -5667,43 +5673,50 @@ class FerminetEnvelope(torch.nn.Module):
             Torch tensor with a scalar value containing the sampled wavefunction value for each batch.
         """
         psi = torch.zeros(self.batch_size).to(torch.device(self.device))
-        psi_up = torch.zeros(self.batch_size, self.determinant, self.spin[0],
-                             self.spin[0]).to(torch.device(self.device))
-        psi_down = torch.zeros(self.batch_size, self.determinant, self.spin[1],
-                               self.spin[1]).to(torch.device(self.device))
-
+        psi_up = []
+        psi_down = []
         for k in range(self.determinant):
+            det = []
             for i in range(self.spin[0]):
                 one_d_index = (k * (self.total_electron)) + i
                 for j in range(self.spin[0]):
-                    psi_up[:, k, i, j] = (torch.sum(
+                    det.append(((torch.sum(
                         (self.envelope_w[one_d_index] * one_electron[:, j, :]) +
                         self.envelope_g[one_d_index],
                         dim=1)) * torch.sum(torch.exp(-torch.abs(
                             torch.norm(one_electron_vector_permuted[:, j, :, :]
                                        @ self.sigma[one_d_index].double(),
                                        dim=2))) * self.pi[one_d_index].T,
-                                            dim=1)
+                                            dim=1)).double())
+            psi_up.append(
+                torch.reshape(
+                    torch.stack(det, dim=1),
+                    (self.batch_size, self.spin[0], self.spin[0])).double())
 
+            det = []
             for i in range(self.spin[0], self.spin[0] + self.spin[1]):
                 one_d_index = (k * (self.total_electron)) + i
                 for j in range(self.spin[0], self.spin[0] + self.spin[1]):
-                    psi_down[:, k, i - self.spin[0], j - self.spin[0]] = (
-                        torch.sum((self.envelope_w[one_d_index] *
-                                   one_electron[:, j, :]) +
-                                  self.envelope_g[one_d_index],
-                                  dim=1)
-                    ) * torch.sum(torch.exp(-torch.abs(
-                        torch.norm(one_electron_vector_permuted[:, j, :, :]
-                                   @ self.sigma[one_d_index].double(),
-                                   dim=2))) * self.pi[one_d_index].T,
-                                  dim=1)
+                    det.append(((torch.sum(
+                        (self.envelope_w[one_d_index] * one_electron[:, j, :]) +
+                        self.envelope_g[one_d_index],
+                        dim=1)) * torch.sum(torch.exp(-torch.abs(
+                            torch.norm(one_electron_vector_permuted[:, j, :, :]
+                                       @ self.sigma[one_d_index].double(),
+                                       dim=2))) * self.pi[one_d_index].T,
+                                            dim=1)).double())
+            psi_down.append(
+                torch.reshape(
+                    torch.stack(det, dim=1),
+                    (self.batch_size, self.spin[1], self.spin[1])).double())
 
-            d_down = torch.det(psi_down[:, k, :, :].clone())
-            d_up = torch.det(psi_up[:, k, :, :].clone())
+            d_down = torch.det(psi_down[-1]).double()
+            d_up = torch.det(psi_up[-1]).double()
             det = d_up * d_down
             psi = psi + self.wdet[k] * det
-        return psi, psi_up, psi_down
+        psi_matrix_up = torch.stack(psi_up, dim=1).double()
+        psi_matrix_down = torch.stack(psi_down, dim=1).double()
+        return psi.double(), psi_matrix_up.double(), psi_matrix_down.double()
 
 
 class MXMNetLocalMessagePassing(nn.Module):
