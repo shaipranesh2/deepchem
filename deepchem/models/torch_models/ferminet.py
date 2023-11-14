@@ -629,7 +629,7 @@ class FerminetModel(TorchModel):
                 # clipping local energies which are away 5 times the variance from the median
                 clamped_energy = torch.clamp(self.energy_sampled,
                                              max=median + 5 * variance,
-                                             min=median - 5 * variance)[:10, :]
+                                             min=median - 5 * variance)
                 self.energy_sampled = None  # releasing memory
                 energy_mean = torch.mean(clamped_energy)
                 self.final_energy = self.final_energy + energy_mean
