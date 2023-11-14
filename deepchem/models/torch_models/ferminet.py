@@ -391,21 +391,7 @@ class FerminetModel(TorchModel):
         if np.sum(self.electron_no) < self.ion_charge:
             raise ValueError("Given charge is not initializable")
 
-        # Initialization for ionic molecules
-        if self.ion_charge != 0:
-            if len(nucleons
-                  ) == 1:  # for an atom, directly the charge is applied
-                self.electron_no[0][0] -= self.ion_charge
-            else:  # for a multiatomic molecule, the most electronegative atom gets a charge of -1 and vice versa. The remaining charges are assigned in terms of decreasing(for anionic charge) and increasing(for cationic charge) electronegativity.
-                electro_neg = electro_neg[electro_neg[:, 1].argsort()]
-                if self.ion_charge > 0:
-                    for iter in range(self.ion_charge):
-                        self.electron_no[int(electro_neg[iter][0])][0] -= 1
-                else:
-                    for iter in range(-self.ion_charge):
-                        self.electron_no[int(electro_neg[-1 - iter][0])][0] += 1
-
-        total_electrons = np.sum(self.electron_no)
+        total_electrons = np.sum(self.electron_no) - self.ion_charge
 
         if self.spin >= 0:
             self.up_spin = (total_electrons + 2 * self.spin) // 2
@@ -432,9 +418,6 @@ class FerminetModel(TorchModel):
             steps=self.random_walk_steps,
             steps_per_update=self.steps_per_update
         )  # sample the electrons using the electron sampler
-        self.molecule.gauss_initialize_position(
-            self.electron_no,
-            stddev=0.5)  # initialize the position of the electrons
         self.prepare_hf_solution()
         super(FerminetModel, self).__init__(self.model, loss=torch.nn.MSELoss())
 
@@ -480,6 +463,7 @@ class FerminetModel(TorchModel):
                 self.nucleon_coordinates[i][1][0]) + " " + str(
                     self.nucleon_coordinates[i][1][1]) + " " + str(
                         self.nucleon_coordinates[i][1][2]) + ";"
+
         self.mol = pyscf.gto.Mole(atom=molecule, basis='sto-6g')
         self.mol.parse_arg = False
         self.mol.unit = 'Bohr'
@@ -487,6 +471,26 @@ class FerminetModel(TorchModel):
         self.mol.charge = self.ion_charge
         self.mol.build(parse_arg=False)
         self.mf = pyscf.scf.UHF(self.mol)
+        self.mf.run()
+        dm = self.mf.make_rdm1()
+        _, chg = pyscf.scf.uhf.mulliken_meta(self.mol, dm)
+        excess_charge = np.array(chg)
+        tmp_charge = self.ion_charge
+        while tmp_charge != 0:
+            if (tmp_charge < 0):
+                charge_index = np.argmin(excess_charge)
+                tmp_charge += 1
+                self.electron_no[charge_index] += 1
+                excess_charge[charge_index] += 1
+            elif (tmp_charge > 0):
+                charge_index = np.argmax(excess_charge)
+                tmp_charge -= 1
+                self.electron_no[charge_index] -= 1
+                excess_charge[charge_index] -= 1
+
+        self.molecule.gauss_initialize_position(
+            self.electron_no,
+            stddev=0.5)  # initialize the position of the electrons
         _ = self.mf.kernel()
 
     def random_walk(self, x: np.ndarray) -> np.ndarray:
@@ -517,7 +521,7 @@ class FerminetModel(TorchModel):
                 np.diagonal(up_spin_mo, axis1=1, axis2=2), axis=1) * np.prod(
                     np.diagonal(down_spin_mo, axis1=1, axis2=2), axis=1)
             self.model.loss(up_spin_mo, down_spin_mo)
-            #np_output[:int(self.batch_no / 2)] = hf_product[:int(self.batch_no /
+            # np_output[:int(self.batch_no / 2)] = hf_product[:int(self.batch_no /
             #                                                     2)]
             return 2 * np.log(np.abs(np_output))
 
@@ -540,7 +544,6 @@ class FerminetModel(TorchModel):
         burn_in:int (default: 100)
             number of steps for to perform burn-in before the aactual training.
         """
-        self.tasks = 'burn'
         for _ in range(burn_in):
             self.molecule.gauss_initialize_position(self.electron_no,
                                                     stddev=0.5)
