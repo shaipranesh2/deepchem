@@ -128,11 +128,11 @@ class Ferminet(torch.nn.Module):
             contains the wavefunction - 'psi' value. It is in the shape (batch_size), where each row corresponds to the solution of one of the batches
         """
         # creating one and two electron features
-        self.input = input.reshape((self.batch_size, -1, 3))
+        self.input = input.reshape((self.batch_size, -1, 3)).to(torch.device(self.device))
         two_electron_vector = self.input.unsqueeze(1) - self.input.unsqueeze(2)
         two_electron_distance = (
             (torch.linalg.norm(two_electron_vector.to(torch.device(self.device)), dim=3) -
-             torch.eye(self.total_electron)) *
+             torch.eye(self.total_electron).to(torch.device(self.device))) *
             (1 - torch.eye(self.total_electron))).unsqueeze(3)
         two_electron = torch.cat(
             (two_electron_vector.to(torch.device(self.device)),
