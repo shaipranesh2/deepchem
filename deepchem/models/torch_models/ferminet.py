@@ -86,7 +86,7 @@ class Ferminet(torch.nn.Module):
         self.determinant = determinant
         self.batch_size = batch_size
         self.spin = spin
-        self.total_electron = spin[0] + spin[1]
+        self.total_electron = (spin[0] + spin[1]).item()
         self.n_one = n_one
         self.n_two = n_two
         self.device = device
@@ -104,15 +104,16 @@ class Ferminet(torch.nn.Module):
             FerminetElectronFeature(self.n_one, self.n_two,
                                     self.nucleon_pos.size()[0], self.batch_size,
                                     self.total_electron,
-                                    [self.spin[0], self.spin[1]],
+                                    [self.spin[0].item(), self.spin[1].item()],
                                     self.device).to(torch.device(self.device)))
         self.ferminet_layer_envelope.append(
             FerminetEnvelope(self.n_one, self.n_two, self.total_electron,
-                             self.batch_size, [self.spin[0], self.spin[1]],
+                             self.batch_size,
+                             [self.spin[0].item(), self.spin[1].item()],
                              self.nucleon_pos.size()[0], self.determinant,
                              self.device).to(torch.device(self.device)))
 
-    def forward(self, input: np.ndarray) -> torch.Tensor:
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
         """
         forward function
 
@@ -490,7 +491,7 @@ class FerminetModel(TorchModel):
 
         self.molecule.gauss_initialize_position(
             self.electron_no,
-            stddev=0.5)  # initialize the position of the electrons
+            stddev=1.0)  # initialize the position of the electrons
         _ = self.mf.kernel()
 
     def random_walk(self, x: np.ndarray) -> np.ndarray:
@@ -544,17 +545,21 @@ class FerminetModel(TorchModel):
         burn_in:int (default: 100)
             number of steps for to perform burn-in before the aactual training.
         """
+        self.tasks = 'burn'
+        self.molecule.gauss_initialize_position(self.electron_no, stddev=1.0)
+        tmp_x = self.molecule.x
         for _ in range(burn_in):
-            self.molecule.gauss_initialize_position(self.electron_no,
-                                                    stddev=0.5)
+            self.molecule.move(stddev=0.02)
+            self.molecule.x = tmp_x
+        self.molecule.move(stddev=0.02)
         self.tasks = 'training'
 
     def train(self,
               nb_epoch: int = 200,
-              lr: float = 0.0006,
+              lr: float = 0.0002,
               weight_decay: float = 0,
-              std: float = 0.12,
-              std_init: float = 0.04):
+              std: float = 0.02,
+              std_init: float = 0.02):
         """
         function to run training or pretraining.
 
@@ -590,9 +595,9 @@ class FerminetModel(TorchModel):
                 accept = self.molecule.move(stddev=std_init)
                 if iteration % 20 == 0:
                     if accept > 0.55:
-                        std_init *= 1.2
-                    else:
                         std_init /= 1.2
+                    else:
+                        std_init *= 1.2
                 self.loss_value = (
                     torch.mean(self.model.running_diff.double()) /
                     self.random_walk_steps).double()
