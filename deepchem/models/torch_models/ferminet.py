@@ -128,15 +128,15 @@ class Ferminet(torch.nn.Module):
             contains the wavefunction - 'psi' value. It is in the shape (batch_size), where each row corresponds to the solution of one of the batches
         """
         # creating one and two electron features
-        self.input = input.reshape((self.batch_size, -1, 3)).to(torch.device(self.device))
-        two_electron_vector = self.input.unsqueeze(1) - self.input.unsqueeze(2)
+        self.input = (input.reshape((self.batch_size, -1, 3))).to(torch.device(self.device))
+        two_electron_vector = (self.input.unsqueeze(1) - self.input.unsqueeze(2)).to(torch.device(self.device))
         two_electron_distance = (
-            (torch.linalg.norm(two_electron_vector.to(torch.device(self.device)), dim=3) -
+            (torch.linalg.norm(two_electron_vector, dim=3) -
              torch.eye(self.total_electron).to(torch.device(self.device))) *
-            (1 - torch.eye(self.total_electron))).unsqueeze(3)
+            (1 - torch.eye(self.total_electron).to(torch.device(self.device)))).unsqueeze(3)
         two_electron = torch.cat(
-            (two_electron_vector.to(torch.device(self.device)),
-             two_electron_distance.to(torch.device(self.device))),
+            (two_electron_vector,
+             two_electron_distance),
             dim=3)
         two_electron = torch.reshape(
             two_electron,
@@ -545,20 +545,16 @@ class FerminetModel(TorchModel):
         burn_in:int (default: 100)
             number of steps for to perform burn-in before the aactual training.
         """
-        self.tasks = 'burn'
-        self.molecule.gauss_initialize_position(self.electron_no, stddev=1.0)
         tmp_x = self.molecule.x
         for _ in range(burn_in):
-            self.molecule.move(stddev=0.02)
-            self.molecule.x = tmp_x
-        self.molecule.move(stddev=0.02)
+            self.molecule.gauss_initialize_position(self.electron_no, stddev=1.0)
         self.tasks = 'training'
 
     def train(self,
               nb_epoch: int = 200,
               lr: float = 0.0002,
               weight_decay: float = 0,
-              std: float = 0.02,
+              std: float = 0.12,
               std_init: float = 0.02):
         """
         function to run training or pretraining.
