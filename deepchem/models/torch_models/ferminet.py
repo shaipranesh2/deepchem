@@ -591,9 +591,9 @@ class FerminetModel(TorchModel):
                 accept = self.molecule.move(stddev=std_init)
                 if iteration % 20 == 0:
                     if accept > 0.55:
-                        std_init /= 1.2
-                    else:
                         std_init *= 1.2
+                    else:
+                        std_init /= 1.2
                 self.loss_value = (
                     torch.mean(self.model.running_diff.double()) /
                     self.random_walk_steps).double()
