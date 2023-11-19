@@ -491,7 +491,7 @@ class FerminetModel(TorchModel):
 
         self.molecule.gauss_initialize_position(
             self.electron_no,
-            stddev=1.0)  # initialize the position of the electrons
+            stddev=0.7)  # initialize the position of the electrons
         _ = self.mf.kernel()
 
     def random_walk(self, x: np.ndarray) -> np.ndarray:
@@ -547,7 +547,7 @@ class FerminetModel(TorchModel):
         """
         tmp_x = self.molecule.x
         for _ in range(burn_in):
-            self.molecule.gauss_initialize_position(self.electron_no, stddev=1.0)
+            self.molecule.gauss_initialize_position(self.electron_no, stddev=0.75)
         self.tasks = 'training'
 
     def train(self,
