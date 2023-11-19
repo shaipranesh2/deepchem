@@ -623,7 +623,7 @@ class FerminetModel(TorchModel):
                 self.energy_sampled = torch.tensor([])
                 # the move function calculates the energy of sampled electrons and samples new set of electrons (does not calculate loss)
                 accept = self.molecule.move(stddev=std)
-                if iteration % 20 == 0:
+                if iteration % 100 == 0:
                     if accept > 0.55:
                         std_init *= 1.2
                     else:
