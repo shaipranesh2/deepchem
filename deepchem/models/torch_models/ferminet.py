@@ -591,9 +591,9 @@ class FerminetModel(TorchModel):
                 accept = self.molecule.move(stddev=std_init)
                 if iteration % 20 == 0:
                     if accept > 0.55:
-                        std_init *= 1.2
-                    else:
                         std_init /= 1.2
+                    else:
+                        std_init *= 1.2
                 self.loss_value = (
                     torch.mean(self.model.running_diff.double()) /
                     self.random_walk_steps).double()
@@ -623,11 +623,11 @@ class FerminetModel(TorchModel):
                 self.energy_sampled = torch.tensor([])
                 # the move function calculates the energy of sampled electrons and samples new set of electrons (does not calculate loss)
                 accept = self.molecule.move(stddev=std)
-                if iteration % 100 == 0:
+                if iteration % 20 == 0:
                     if accept > 0.55:
-                        std_init *= 1.2
-                    else:
                         std_init /= 1.2
+                    else:
+                        std_init *= 1.2
                 median, _ = torch.median(self.energy_sampled, axis=0)
                 variance = torch.mean(torch.abs(self.energy_sampled - median))
                 # clipping local energies which are away 5 times the variance from the median
