@@ -491,7 +491,7 @@ class FerminetModel(TorchModel):
 
         self.molecule.gauss_initialize_position(
             self.electron_no,
-            stddev=0.7)  # initialize the position of the electrons
+            stddev=0.5)  # initialize the position of the electrons
         _ = self.mf.kernel()
 
     def random_walk(self, x: np.ndarray) -> np.ndarray:
@@ -547,14 +547,14 @@ class FerminetModel(TorchModel):
         """
         tmp_x = self.molecule.x
         for _ in range(burn_in):
-            self.molecule.gauss_initialize_position(self.electron_no, stddev=0.75)
+            self.molecule.gauss_initialize_position(self.electron_no, stddev=0.5)
         self.tasks = 'training'
 
     def train(self,
               nb_epoch: int = 200,
-              lr: float = 0.0002,
+              lr: float = 0.002,
               weight_decay: float = 0,
-              std: float = 0.12,
+              std: float = 0.08,
               std_init: float = 0.02):
         """
         function to run training or pretraining.
@@ -589,7 +589,7 @@ class FerminetModel(TorchModel):
                 optimizer.zero_grad()
                 self.loss_value = torch.tensor(0.0)
                 accept = self.molecule.move(stddev=std_init)
-                if iteration % 20 == 0:
+                if iteration % 100 == 0:
                     if accept > 0.55:
                         std_init /= 1.2
                     else:
@@ -623,8 +623,8 @@ class FerminetModel(TorchModel):
                 self.energy_sampled = torch.tensor([])
                 # the move function calculates the energy of sampled electrons and samples new set of electrons (does not calculate loss)
                 accept = self.molecule.move(stddev=std)
-                if iteration % 100 == 0:
-                    if accept > 0.55:
+                if iteration % 5 == 0:
+                    if accept > 0.85:
                         std_init *= 1.2
                     else:
                         std_init /= 1.2
